@@ -20,9 +20,16 @@ CREATE TABLE IF NOT EXISTS raport (
     user TEXT,
     valoare INTEGER,
     categorie TEXT
+    data TEXT
 )
 ''')
 conn.commit()
+
+cursor.execute("PRAGMA table_info(raport)")
+coloane_existente = [col[1] for col in cursor.fetchall()]
+if 'data' not in coloane_existente:
+    cursor.execute("ALTER TABLE raport ADD COLUMN data TEXT")
+    conn.commit()
 
 def hash_password(password, salt=None):
     """ÃŽntoarce 'salt$hash'. Salt nou, aleator, dacÄƒ nu e dat unul."""
@@ -54,6 +61,7 @@ def login_user(username, password):
 
 import streamlit as st
 import pandas as pd
+from datetime import date
 
 st.title("ðŸ” Sistem securizat Streamlit + SQLite")
 
@@ -68,8 +76,12 @@ if 'user' in st.session_state:
     st.subheader(":bar_chart: Dashboard")
     val = st.number_input("Introdu valoare")
     cat = st.selectbox("Categorie", ["Alimente", "Transport", "DistracÈ›ie"])
+    data_cheltuiala = st.date_input("Data", value=date.today())
     if st.button(":inbox_tray: SalveazÄƒ"):
-        cursor.execute("INSERT INTO raport (user, valoare, categorie) VALUES (?, ?, ?)", (user, val, cat))
+       cursor.execute(
+    "INSERT INTO raport (user, valoare, categorie, data) VALUES (?, ?, ?, ?)",
+    (user, val, cat, data_cheltuiala.isoformat())
+)
         conn.commit()
         st.success("Date salvate!")
 
