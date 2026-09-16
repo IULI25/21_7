@@ -124,8 +124,26 @@ if 'user' in st.session_state:
     # Export
     st.download_button("ðŸ—ƒ ExportÄƒ CSV", df_filtrat.to_csv(index=False), file_name="raport.csv")
 
-    st.stop()
+  # Ètergere înregistrare
+    st.subheader(":wastebasket: È˜terge o înregistrare")
+    if not df_filtrat.empty:
+        optiuni_stergere = {
+            f"#{row.id} — {row.categorie} — {row.valoare} ({row.data.date() if pd.notna(row.data) else 'fÄƒrÄƒ datÄƒ'})": row.id
+            for row in df_filtrat.itertuples()
+        }
+        eticheta_selectata = st.selectbox("Alege înregistrarea de È™ters", list(optiuni_stergere.keys()))
+        if st.button(":wastebasket: È˜terge înregistrarea selectatÄƒ"):
+            id_de_sters = optiuni_stergere[eticheta_selectata]
+            # user=? în plus, ca sÄƒ È™tearga doar din propriile date
+            cursor.execute("DELETE FROM raport WHERE id=? AND user=?", (id_de_sters, user))
+            conn.commit()
+            st.success(f"Înregistrarea #{id_de_sters} a fost È™tearsÄƒ!")
+            st.rerun()
+    else:
+        st.caption("Nu existÄƒ înregistrÄƒri de È™ters.")
 
+    st.stop()
+    
 menu = ["Login", "Register"]
 choice = st.sidebar.selectbox("Meniu", menu)
 
