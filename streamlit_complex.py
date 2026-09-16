@@ -88,17 +88,41 @@ if 'user' in st.session_state:
     # Vizualizare
     st.subheader(":mag: Istoric cheltuieli")
     df = pd.read_sql_query("SELECT * FROM raport WHERE user=?", conn, params=(user,))
-    st.dataframe(df)
+
+    df_filtrat = df.copy()
+    if not df.empty:
+        df_filtrat['data'] = pd.to_datetime(df_filtrat['data'], errors='coerce')
+
+    st.markdown("**Filtreaza dupa:**")
+        col_an, col_luna = st.columns(2)
+
+        ani_disponibili = sorted(df_filtrat['data'].dt.year.dropna().unique().astype(int), reverse=True)
+        with col_an:
+            an_selectat = st.selectbox("An", ["Toate anii"] + [str(a) for a in ani_disponibili])
+
+        luni_ro = ["Toate lunile", "Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie",
+                   "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie"]
+        with col_luna:
+            luna_selectata = st.selectbox("LunÄƒ", luni_ro)
+
+              if an_selectat != "Toate anii":
+            df_filtrat = df_filtrat[df_filtrat['data'].dt.year == int(an_selectat)]
+        if luna_selectata != "Toate lunile":
+            numar_luna = luni_ro.index(luna_selectata)  # 1-12
+            df_filtrat = df_filtrat[df_filtrat['data'].dt.month == numar_luna]
+
+    st.dataframe(df_filtrat)
+ 
 
     # Grafic
-    if not df.empty:
+     if not df_filtrat.empty:
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots()
-        df.groupby('categorie')['valoare'].sum().plot(kind='bar', ax=ax)
+        df_filtrat.groupby('categorie')['valoare'].sum().plot(kind='bar', ax=ax)
         st.pyplot(fig)
 
     # Export
-    st.download_button("ðŸ—ƒ ExportÄƒ CSV", df.to_csv(index=False), file_name="raport.csv")
+    st.download_button("ðŸ—ƒ ExportÄƒ CSV", df_filtrat.to_csv(index=False), file_name="raport.csv")
 
     st.stop()
 
